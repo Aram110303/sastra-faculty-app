@@ -93,8 +93,8 @@ if st.session_state.page == "login":
     email = st.text_input("University Email")
 
     if st.button("Continue"):
-        if not email.lower().endswith("@sastra.edu"):
-            st.error("Access restricted to SASTRA University faculty.")
+        if ".sastra.edu" not in email.lower():
+            st.error("Access restricted to other University faculty.")
         else:
             st.session_state.email = email.lower()
             c.execute("SELECT * FROM users WHERE email=?", (st.session_state.email,))
