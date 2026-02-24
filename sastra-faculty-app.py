@@ -46,14 +46,16 @@ def extract_keywords(text):
     return [kw[0] for kw in keywords]
 
 # ------------------------------
-# SCRAPER FUNCTION
+# SCRAPER FUNCTION FOR SCBT FACULTY
 # ------------------------------
-def scrape_sastra_faculty(url, user_email):
+def scrape_scbt_faculty(user_email):
+    url = "https://www.sastra.edu/staffprofiles/schools/scbt.php"
     try:
         res = requests.get(url, timeout=10)
         soup = BeautifulSoup(res.text, "html.parser")
-        faculty_blocks = soup.find_all("h1")
         username = user_email.split("@")[0].lower()
+        
+        faculty_blocks = soup.find_all("h1")
         for prof in faculty_blocks:
             name = prof.get_text(strip=True)
             if username in name.lower().replace(" ", ""):
@@ -62,18 +64,24 @@ def scrape_sastra_faculty(url, user_email):
                 while parent and parent.name != "h1":
                     text += parent.get_text(separator=" ", strip=True) + " "
                     parent = parent.find_next_sibling()
+                
                 # Areas of Interest
                 areas = ""
                 if "Areas of Interest" in text:
                     areas = text.split("Areas of Interest")[1]
                     areas = areas.split("ORCID")[0].strip() if "ORCID" in areas else areas.strip()
+                
                 # ORCID
                 orcid_tag = prof.find_next("a", href=True)
                 orcid = ""
                 if orcid_tag and "orcid.org" in orcid_tag["href"]:
                     orcid = orcid_tag["href"]
+                
                 research_summary = f"Research focused on {areas} with interdisciplinary applications." if areas else "Research summary not found."
+                
+                # Placeholder H-index
                 h_index = "Not Available"
+
                 return {
                     "name": name,
                     "research_summary": research_summary,
@@ -89,12 +97,12 @@ def scrape_sastra_faculty(url, user_email):
 # PAGE 1 — LOGIN
 # ------------------------------
 if st.session_state.page == "login":
-    st.title("SASTRA Faculty Login")
-    email = st.text_input("University Email")
+    st.title("SCBT Faculty Login")
+    email = st.text_input("University Email (@scbt.sastra.edu only)")
 
     if st.button("Continue"):
-        if ".sastra.edu" not in email.lower():
-            st.error("Access restricted to other University faculty.")
+        if not email.lower().endswith("@scbt.sastra.edu"):
+            st.error("Access restricted to SCBT SASTRA faculty only.")
         else:
             st.session_state.email = email.lower()
             c.execute("SELECT * FROM users WHERE email=?", (st.session_state.email,))
@@ -180,11 +188,11 @@ elif st.session_state.page == "academic_id":
 # PAGE 5 — DASHBOARD
 # ------------------------------
 elif st.session_state.page == "dashboard":
-    st.title("Faculty Profile Dashboard")
+    st.title("SCBT Faculty Profile Dashboard")
     c.execute("SELECT faculty_url FROM users WHERE email=?",
               (st.session_state.email,))
     faculty_url = c.fetchone()[0]
-    profile = scrape_sastra_faculty(faculty_url, st.session_state.email)
+    profile = scrape_scbt_faculty(st.session_state.email)
 
     if "error" not in profile:
         st.subheader("Name:")
